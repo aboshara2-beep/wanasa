@@ -1,51 +1,67 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  ActivityIndicator, Dimensions,
+  ActivityIndicator, Dimensions, Alert,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { router }         from 'expo-router';
-import { Ionicons }       from '@expo/vector-icons';
+import { LinearGradient }  from 'expo-linear-gradient';
+import { router }          from 'expo-router';
+import { Ionicons }        from '@expo/vector-icons';
 import { Colors, Spacing, Typography, Radius } from '../../src/shared/theme';
-import { useAuthStore }   from '../../src/features/auth/store';
+import { useAuthStore }    from '../../src/features/auth/store';
+import { loginWithFacebook } from '../../src/features/auth/services/facebook';
+import { API_CONFIG }      from '../../src/shared/api/config';
 
 const { height } = Dimensions.get('window');
 
-const MOCK_USERS = [
-  {
-    id:'u1', name:'محمد أحمد', username:'mohammed_a',
-    avatar:'https://i.pravatar.cc/150?img=3',
-    role:'user' as const, points:247, weeklyPoints:87,
-    streak:5, graceUsed:false, isOnline:true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id:'admin1', name:'أدمن ونسة', username:'wanasa_admin',
-    avatar:'https://i.pravatar.cc/150?img=8',
-    role:'admin' as const, points:999, weeklyPoints:999,
-    streak:30, graceUsed:false, isOnline:true,
-    createdAt: new Date().toISOString(),
-  },
-];
-
 export default function LoginScreen() {
-  const [loading,  setLoading]  = useState(false);
-  const [selected, setSelected] = useState(0);
+  const [loading, setLoading] = useState(false);
   const setUser  = useAuthStore(s => s.setUser);
   const setToken = useAuthStore(s => s.setToken);
 
-  const handleLogin = async () => {
+  const handleFacebookLogin = async () => {
     setLoading(true);
-    await new Promise(r => setTimeout(r, 800));
-    const user = MOCK_USERS[selected];
-    setToken(`mock_token_${user.id}`);
-    setUser(user);
-    setLoading(false);
+    try {
+      // ── 1. الحصول على Facebook Token ──
+      const fbToken = await loginWithFacebook();
 
-    if (user.role === 'admin') {
-      router.replace('/admin/index');
-    } else {
-      router.replace('/(tabs)/home');
+      // ── 2. إرساله للـ Backend ──
+      const res = await fetch(`${API_CONFIG.BASE_URL}/auth/facebook`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ accessToken: fbToken }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error ?? 'فشل تسجيل الدخول');
+      }
+
+      // ── 3. حفظ البيانات ──
+      setToken(data.data.token);
+      setUser({
+        ...data.data.user,
+        weeklyPoints: 0,
+        graceUsed:    false,
+        isOnline:     true,
+        blockedUsers: [],
+        badges:       [],
+        stats: { videos:0, followers:0, following:0, wins:0 },
+      });
+
+      // ── 4. التوجيه ──
+      if (data.data.user.role === 'admin') {
+        router.replace('/admin');
+      } else {
+        router.replace('/(tabs)/home');
+      }
+
+    } catch (err: any) {
+      if (err.message !== 'تم إلغاء تسجيل الدخول') {
+        Alert.alert('خطأ', err.message ?? 'فشل تسجيل الدخول — تأكد من الاتصال');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -55,60 +71,47 @@ export default function LoginScreen() {
       style={s.container}
     >
       <View style={s.glow} />
+
+      {/* Logo */}
       <View style={s.logo}>
         <Text style={s.logoAr}>وَنَسَة</Text>
         <Text style={s.logoEn}>WANASA</Text>
-        <View style={s.devBadge}>
-          <Text style={s.devText}>DEV MODE</Text>
-        </View>
+        <Text style={s.tagline}>اللعبة الاجتماعية الأولى 🎬</Text>
       </View>
 
-      <View style={s.selector}>
-        <Text style={s.selectorLabel}>اختر مستخدم للتجربة</Text>
-        {MOCK_USERS.map((u, i) => (
-          <TouchableOpacity
-            key={u.id}
-            style={[s.userCard, selected === i && s.userCardActive]}
-            onPress={() => setSelected(i)}
-            activeOpacity={0.8}
-          >
-            <View style={[s.roleIcon, u.role === 'admin' && s.roleIconAdmin]}>
-              <Ionicons
-                name={u.role === 'admin' ? 'shield-checkmark' : 'person'}
-                size={20}
-                color={u.role === 'admin' ? Colors.gold : Colors.primary}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.userName}>{u.name}</Text>
-              <Text style={s.userRole}>
-                {u.role === 'admin' ? '👑 مدير' : '👤 مستخدم'} · {u.points} نقطة
-              </Text>
-            </View>
-            {selected === i && (
-              <Ionicons name="checkmark-circle" size={22} color={Colors.primary} />
-            )}
-          </TouchableOpacity>
+      {/* Features */}
+      <View style={s.features}>
+        {[
+          { icon:'flame',   text:'تحديات يومية ممتعة' },
+          { icon:'trophy',  text:'تنافس وفز نقاط' },
+          { icon:'people',  text:'مجتمع عربي حقيقي' },
+        ].map(f => (
+          <View key={f.text} style={s.featureRow}>
+            <Ionicons name={f.icon as any} size={20} color={Colors.primary} />
+            <Text style={s.featureText}>{f.text}</Text>
+          </View>
         ))}
       </View>
 
+      {/* Login Button */}
       <View style={s.bottom}>
         <TouchableOpacity
-          style={s.loginBtn}
-          onPress={handleLogin}
+          style={s.fbBtn}
+          onPress={handleFacebookLogin}
           disabled={loading}
           activeOpacity={0.85}
         >
           {loading
             ? <ActivityIndicator color="#fff" />
             : <>
-                <Ionicons name="play-circle" size={22} color="#fff" />
-                <Text style={s.loginText}>ابدأ التجربة</Text>
+                <Ionicons name="logo-facebook" size={24} color="#fff" />
+                <Text style={s.fbText}>تسجيل الدخول بفيسبوك</Text>
               </>
           }
         </TouchableOpacity>
-        <Text style={s.note}>
-          * سيتم إضافة Facebook Login قبل الإطلاق
+
+        <Text style={s.terms}>
+          بالدخول توافق على شروط الاستخدام وسياسة الخصوصية
         </Text>
       </View>
     </LinearGradient>
@@ -116,23 +119,17 @@ export default function LoginScreen() {
 }
 
 const s = StyleSheet.create({
-  container:      { flex:1, alignItems:'center', justifyContent:'space-between', paddingVertical:60 },
-  glow:           { position:'absolute', top:height*0.15, width:250, height:250, borderRadius:125, backgroundColor:Colors.primary, opacity:0.07 },
-  logo:           { alignItems:'center', gap:Spacing.xs },
-  logoAr:         { fontSize:52, fontWeight:Typography.weights.extrabold, color:Colors.primary },
-  logoEn:         { fontSize:Typography.sizes.md, color:Colors.textSecondary, letterSpacing:6, fontWeight:Typography.weights.bold },
-  devBadge:       { backgroundColor:'rgba(255,107,44,0.2)', paddingHorizontal:12, paddingVertical:4, borderRadius:Radius.full, borderWidth:1, borderColor:Colors.primary, marginTop:4 },
-  devText:        { color:Colors.primary, fontSize:10, fontWeight:Typography.weights.bold, letterSpacing:2 },
-  selector:       { width:'100%', paddingHorizontal:Spacing.xl, gap:Spacing.sm },
-  selectorLabel:  { color:Colors.textSecondary, fontSize:Typography.sizes.sm, textAlign:'center', marginBottom:4 },
-  userCard:       { flexDirection:'row', alignItems:'center', gap:Spacing.md, backgroundColor:Colors.surface, padding:Spacing.md, borderRadius:Radius.lg, borderWidth:1, borderColor:Colors.border },
-  userCardActive: { borderColor:Colors.primary, backgroundColor:'rgba(255,107,44,0.08)' },
-  roleIcon:       { width:44, height:44, borderRadius:22, backgroundColor:'rgba(255,107,44,0.1)', alignItems:'center', justifyContent:'center' },
-  roleIconAdmin:  { backgroundColor:'rgba(255,215,0,0.1)' },
-  userName:       { color:Colors.textPrimary, fontSize:Typography.sizes.base, fontWeight:Typography.weights.bold },
-  userRole:       { color:Colors.textSecondary, fontSize:Typography.sizes.xs, marginTop:2 },
-  bottom:         { width:'100%', paddingHorizontal:Spacing.xl, gap:Spacing.sm, alignItems:'center' },
-  loginBtn:       { width:'100%', flexDirection:'row', alignItems:'center', justifyContent:'center', gap:Spacing.sm, backgroundColor:Colors.primary, paddingVertical:16, borderRadius:Radius.md },
-  loginText:      { color:'#fff', fontSize:Typography.sizes.md, fontWeight:Typography.weights.bold },
-  note:           { color:Colors.textMuted, fontSize:Typography.sizes.xs, textAlign:'center' },
+  container:   { flex:1, alignItems:'center', justifyContent:'space-between', paddingVertical:70 },
+  glow:        { position:'absolute', top:height*0.12, width:300, height:300, borderRadius:150, backgroundColor:Colors.primary, opacity:0.07 },
+  logo:        { alignItems:'center', gap:Spacing.sm },
+  logoAr:      { fontSize:60, fontWeight:Typography.weights.extrabold, color:Colors.primary },
+  logoEn:      { fontSize:Typography.sizes.md, color:Colors.textSecondary, letterSpacing:6, fontWeight:Typography.weights.bold },
+  tagline:     { color:Colors.textSecondary, fontSize:Typography.sizes.base, marginTop:4 },
+  features:    { gap:Spacing.md, width:'100%', paddingHorizontal:Spacing.xl*2 },
+  featureRow:  { flexDirection:'row', alignItems:'center', gap:Spacing.md },
+  featureText: { color:Colors.textPrimary, fontSize:Typography.sizes.base },
+  bottom:      { width:'100%', paddingHorizontal:Spacing.xl, gap:Spacing.md, alignItems:'center' },
+  fbBtn:       { width:'100%', flexDirection:'row', alignItems:'center', justifyContent:'center', gap:Spacing.md, backgroundColor:'#1877F2', paddingVertical:16, borderRadius:Radius.md },
+  fbText:      { color:'#fff', fontSize:Typography.sizes.md, fontWeight:Typography.weights.bold },
+  terms:       { color:Colors.textMuted, fontSize:Typography.sizes.xs, textAlign:'center', lineHeight:18 },
 });

@@ -1,33 +1,16 @@
-import { GET, POST }       from './interceptors';
-import { PagedResponse, ApiResponse, Video } from './types';
+import { apiFetch } from './interceptors';
 
 export const FeedAPI = {
-  // الفيد الهجين — Backend يطبق الخوارزمية
   getFeed: (page = 1) =>
-    GET<PagedResponse<Video>>(`/feed?page=${page}`),
+    apiFetch<{ videos: any[]; hasMore: boolean }>(`/feed?page=${page}`),
 
-  // تفاعلات
-  like:    (id: string) =>
-    POST<ApiResponse<{ liked: boolean }>>(`/videos/${id}/like`),
-
-  vote:    (id: string) =>
-    POST<ApiResponse<{ voted: boolean }>>(`/videos/${id}/vote`),
-
-  save:    (id: string) =>
-    POST<ApiResponse<{ saved: boolean }>>(`/videos/${id}/save`),
-
-  view: (id: string, watchTime: number, deviceHash?: string) =>
-    POST<ApiResponse<{ counted: boolean }>>(`/videos/${id}/view`, {
-      watchTime,
-      deviceHash: deviceHash ?? '',
+  like:    (id: string) => apiFetch(`/videos/${id}/like`,    { method: 'POST' }),
+  vote:    (id: string) => apiFetch(`/videos/${id}/vote`,    { method: 'POST' }),
+  save:    (id: string) => apiFetch(`/videos/${id}/save`,    { method: 'POST' }),
+  view:    (id: string) => apiFetch(`/videos/${id}/view`,    { method: 'POST' }),
+  comment: (id: string, text: string) =>
+    apiFetch(`/videos/${id}/comment`, {
+      method: 'POST',
+      body: JSON.stringify({ content: text }),
     }),
-
-  comment: (id: string, content: string, parentId?: string) =>
-    POST<ApiResponse<{ id: string }>>(`/videos/${id}/comment`, {
-      content,
-      parentId,
-    }),
-
-  report: (id: string, reason: string) =>
-    POST<ApiResponse<null>>(`/videos/${id}/report`, { reason }),
 };

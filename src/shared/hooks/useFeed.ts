@@ -1,119 +1,41 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { FeedAPI }         from '../api/feed';
-import { parseError }      from '../api/errors';
-import { socket }          from '../api/websocket';
-import { useFeedStore }    from '../../features/feed/store';
-import type { Video }      from '../api/types';
+import { useEffect, useCallback, useRef } from 'react';
+import { FeedAPI }      from '../api/feed';
+import { useFeedStore } from '../../features/feed/store';
 
 export function useFeed() {
-  const [loading,     setLoading]     = useState(false);
-  const [refreshing,  setRefreshing]  = useState(false);
-  const [error,       setError]       = useState<string | null>(null);
+  const { videos, hasMore, isLoading, setVideos, appendVideos, setLoading } = useFeedStore();
+  const page = useRef(1);
 
-  const {
-    videos, appendVideos, setVideos,
-    likeVideo, voteVideo, saveVideo,
-    hasMore,
-  } = useFeedStore();
-
-  const page    = useRef(1);
-  const fetching= useRef(false);
-
-  // ── جلب الفيد ──
-  const fetchFeed = useCallback(async (reset = false) => {
-    if (fetching.current) return;
-    fetching.current = true;
-
+  const loadFeed = useCallback(async (reset = false) => {
+    if (isLoading) return;
+    setLoading(true);
     try {
-      if (reset) {
-        setRefreshing(true);
-        page.current = 1;
-      } else {
-        setLoading(true);
-      }
-
-      const res = await FeedAPI.getFeed(page.current);
-      const newVideos = res.data ?? [];
+      const currentPage = reset ? 1 : page.current;
+      const data = await FeedAPI.getFeed(currentPage);
 
       if (reset) {
-        setVideos(newVideos);
+        setVideos(data.videos ?? []);
+        page.current = 2;
       } else {
-        appendVideos(newVideos);
+        appendVideos(data.videos ?? []);
+        page.current += 1;
       }
-
-      if (res.hasMore) page.current++;
-
     } catch (err) {
-      setError(parseError(err).message);
+      console.log('Feed error:', err);
     } finally {
       setLoading(false);
-      setRefreshing(false);
-      fetching.current = false;
     }
-  }, [setVideos, appendVideos]);
+  }, [isLoading]);
 
-  // ── تحميل الأول ──
   useEffect(() => {
-    fetchFeed(true);
-
-    // الاستماع لفائز جديد من WS
-    const unsub = socket.on('new_winner', (payload: Video) => {
-      useFeedStore.getState().setWinner(payload);
-    });
-
-    return () => { unsub(); };
-  }, []);
-
-  // ── تحميل المزيد ──
-  const loadMore = useCallback(() => {
-    if (!loading && hasMore) fetchFeed(false);
-  }, [loading, hasMore, fetchFeed]);
-
-  const refresh = useCallback(() => fetchFeed(true), [fetchFeed]);
-
-  // ── Optimistic Actions ──
-  const handleLike = useCallback(async (videoId: string) => {
-    likeVideo(videoId); // Optimistic
-    try {
-      await FeedAPI.like(videoId);
-    } catch {
-      likeVideo(videoId); // Rollback
-    }
-  }, [likeVideo]);
-
-  const handleVote = useCallback(async (videoId: string) => {
-    voteVideo(videoId);
-    try {
-      await FeedAPI.vote(videoId);
-    } catch {
-      voteVideo(videoId);
-    }
-  }, [voteVideo]);
-
-  const handleSave = useCallback(async (videoId: string) => {
-    saveVideo(videoId);
-    try {
-      await FeedAPI.save(videoId);
-    } catch {
-      saveVideo(videoId);
-    }
-  }, [saveVideo]);
-
-  const handleView = useCallback((videoId: string, watchTime: number) => {
-    FeedAPI.view(videoId, watchTime).catch(() => {});
+    loadFeed(true);
   }, []);
 
   return {
     videos,
-    loading,
-    refreshing,
     hasMore,
-    error,
-    loadMore,
-    refresh,
-    handleLike,
-    handleVote,
-    handleSave,
-    handleView,
+    isLoading,
+    refresh:  () => loadFeed(true),
+    loadMore: () => hasMore && !isLoading && loadFeed(false),
   };
 }

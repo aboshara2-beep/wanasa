@@ -32,14 +32,15 @@
       "typedRoutes": true
     },
     "extra": {
-      "fbAppId": "156042655519521",
+      "fbAppId": "2476782436090392",
       "facebookRedirectUri": "https://auth.expo.io/@0911907629you/wanasa",
       "apiUrl": "https://api.wanasa.app/api/v1",
       "wsUrl": "wss://api.wanasa.app/ws",
       "router": {},
       "eas": {
         "projectId": "cdfb222d-b1dc-4f54-9bdf-c88a5ecfd197"
-      }
+      },
+      "geminiKey": "AIzaSyCoJqmxVy0NTTcqm68OlS_nyD1GU4mzz8o"
     }
   }
 }

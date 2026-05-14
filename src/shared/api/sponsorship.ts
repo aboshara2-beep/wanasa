@@ -1,8 +1,6 @@
-import { GET }           from './interceptors';
-import { ApiResponse, SponsoredState } from './types';
+import { apiFetch } from './interceptors';
 
 export const SponsorshipAPI = {
-  // حالة الرعاية — يُستدعى عند فتح التطبيق
-  getState: () =>
-    GET<ApiResponse<SponsoredState>>('/sponsored/state', { auth: false }),
+  getState: () => apiFetch('/sponsored/state', { auth: false } as any)
+    .catch(() => null),
 };
