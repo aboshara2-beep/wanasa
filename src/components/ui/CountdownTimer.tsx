@@ -1,78 +1,50 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Typography } from '../../constants/theme';
+import { Colors, Typography } from '../../shared/theme';
 
-interface Props {
-  endsAt: string;
-  onEnd?: () => void;
-}
+export function CountdownTimer({ endsAt }: { endsAt: string }) {
+  const calc = () => {
+    const diff = new Date(endsAt).getTime() - Date.now();
+    if (diff <= 0) return { h:'00', m:'00', s:'00' };
+    const h = Math.floor(diff/3600000);
+    const m = Math.floor((diff%3600000)/60000);
+    const s = Math.floor((diff%60000)/1000);
+    return {
+      h: String(h).padStart(2,'0'),
+      m: String(m).padStart(2,'0'),
+      s: String(s).padStart(2,'0'),
+    };
+  };
 
-function pad(n: number) {
-  return String(n).padStart(2, '0');
-}
-
-function getTimeLeft(endsAt: string) {
-  const diff = Math.max(0, new Date(endsAt).getTime() - Date.now());
-  const h = Math.floor(diff / 3_600_000);
-  const m = Math.floor((diff % 3_600_000) / 60_000);
-  const s = Math.floor((diff % 60_000) / 1_000);
-  return { h, m, s, done: diff === 0 };
-}
-
-export function CountdownTimer({ endsAt, onEnd }: Props) {
-  const [time, setTime] = useState(() => getTimeLeft(endsAt));
-
-  const tick = useCallback(() => {
-    const t = getTimeLeft(endsAt);
-    setTime(t);
-    if (t.done) onEnd?.();
-  }, [endsAt, onEnd]);
-
+  const [t, setT] = useState(calc());
   useEffect(() => {
-    const id = setInterval(tick, 1_000);
+    const id = setInterval(() => setT(calc()), 1000);
     return () => clearInterval(id);
-  }, [tick]);
+  }, [endsAt]);
 
   return (
-    <View style={styles.row}>
-      {[pad(time.h), pad(time.m), pad(time.s)].map((val, i) => (
+    <View style={ct.row}>
+      {[t.h, t.m, t.s].map((v,i) => (
         <React.Fragment key={i}>
-          <View style={styles.block}>
-            <Text style={styles.value}>{val}</Text>
-            <Text style={styles.label}>
-              {['س', 'د', 'ث'][i]}
-            </Text>
+          <View style={ct.block}>
+            <Text style={ct.num}>{v}</Text>
           </View>
-          {i < 2 && <Text style={styles.colon}>:</Text>}
+          {i < 2 && <Text style={ct.colon}>:</Text>}
         </React.Fragment>
       ))}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection:  'row',
-    alignItems:     'center',
-    gap:            4,
-  },
+const ct = StyleSheet.create({
+  row:   { flexDirection:'row', alignItems:'center', gap:2 },
   block: {
-    alignItems: 'center',
-    minWidth:   36,
+    backgroundColor:'rgba(255,107,44,0.2)',
+    paddingHorizontal:6, paddingVertical:3,
+    borderRadius:6,
+    borderWidth:1, borderColor:'rgba(255,107,44,0.3)',
+    minWidth:28, alignItems:'center',
   },
-  value: {
-    color:      Colors.primary,
-    fontSize:   Typography.sizes.lg,
-    fontWeight: Typography.weights.extrabold,
-  },
-  label: {
-    color:    Colors.textMuted,
-    fontSize: Typography.sizes.xs,
-  },
-  colon: {
-    color:      Colors.primary,
-    fontSize:   Typography.sizes.lg,
-    fontWeight: Typography.weights.bold,
-    marginBottom: 6,
-  },
+  num:   { ...Typography.label, color:Colors.primary, fontVariant:['tabular-nums'] as any },
+  colon: { ...Typography.label, color:Colors.primary, marginBottom:2 },
 });

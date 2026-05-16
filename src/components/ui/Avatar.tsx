@@ -1,65 +1,39 @@
 import React from 'react';
-import { Image, View, StyleSheet, Text } from 'react-native';
-import { Colors, Radius } from '../../constants/theme';
+import { View, Text, Image, StyleSheet } from 'react-native';
+import { Colors, Typography } from '../../shared/theme';
 
 interface Props {
-  uri?:      string;
-  name?:     string;
-  size?:     number;
-  isOnline?: boolean;
+  uri?: string; name?: string; size?: number;
+  showBorder?: boolean; borderColor?: string;
 }
 
-export function Avatar({ uri, name, size = 40, isOnline }: Props) {
-  const initials = name?.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+export function Avatar({ uri, name, size=40, showBorder=false, borderColor=Colors.primary }: Props) {
+  const initials = (name ?? 'U').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  const fontSize = size * 0.38;
 
   return (
-    <View style={[styles.wrapper, { width: size, height: size }]}>
-      {uri
-        ? <Image
-            source={{ uri }}
-            style={[styles.image, { width: size, height: size, borderRadius: size / 2 }]}
-          />
-        : <View style={[
-            styles.placeholder,
-            { width: size, height: size, borderRadius: size / 2 },
-          ]}>
-            <Text style={[styles.initials, { fontSize: size * 0.35 }]}>
-              {initials}
-            </Text>
-          </View>
-      }
-      {isOnline && (
-        <View style={[styles.online, { width: size * 0.28, height: size * 0.28 }]} />
+    <View style={[
+      av.wrap,
+      { width:size, height:size, borderRadius:size/2 },
+      showBorder && { borderWidth:2, borderColor, padding:2 },
+    ]}>
+      {uri ? (
+        <Image
+          source={{ uri }}
+          style={{ width:size-(showBorder?4:0), height:size-(showBorder?4:0), borderRadius:size/2 }}
+          defaultSource={{ uri:`https://ui-avatars.com/api/?name=${encodeURIComponent(name??'U')}&background=FF6B2C&color=fff&size=${size}` }}
+        />
+      ) : (
+        <View style={[av.placeholder, { width:size, height:size, borderRadius:size/2 }]}>
+          <Text style={[av.initials, { fontSize }]}>{initials}</Text>
+        </View>
       )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  wrapper: {
-    position: 'relative',
-  },
-  image: {
-    resizeMode: 'cover',
-  },
-  placeholder: {
-    backgroundColor: Colors.surfaceElevated,
-    alignItems:      'center',
-    justifyContent:  'center',
-    borderWidth:     1,
-    borderColor:     Colors.border,
-  },
-  initials: {
-    color:      Colors.primary,
-    fontWeight: '700',
-  },
-  online: {
-    position:        'absolute',
-    bottom:          0,
-    right:           0,
-    backgroundColor: Colors.success,
-    borderRadius:    Radius.full,
-    borderWidth:     2,
-    borderColor:     Colors.background,
-  },
+const av = StyleSheet.create({
+  wrap:        { overflow:'hidden' },
+  placeholder: { backgroundColor:'rgba(255,107,44,0.25)', alignItems:'center', justifyContent:'center' },
+  initials:    { color:Colors.primary, fontWeight:'700' },
 });

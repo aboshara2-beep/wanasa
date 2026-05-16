@@ -1,72 +1,29 @@
-// ===================================
-// 🎨 Wanasa Design System
-// ===================================
-
 export const Colors = {
-  // Brand
   primary:        '#FF6B2C',
-  primaryLight:   '#FF8C5A',
-  primaryDark:    '#E5561F',
-
-  // Background
-  background:     '#0F0F0F',
-  surface:        '#1A1A1A',
-  surfaceElevated:'#242424',
-  card:           '#1E1E1E',
-
-  // Text
+  primaryLight:   '#FF8F5E',
+  primaryDark:    '#E5501A',
+  primaryGlow:    'rgba(255,107,44,0.25)',
+  background:     '#080808',
+  surface:        'rgba(255,255,255,0.05)',
+  surfaceElevated:'rgba(255,255,255,0.07)',
+  surfaceHigh:    'rgba(255,255,255,0.09)',
+  surfaceBorder:  'rgba(255,255,255,0.10)',
+  glass:          'rgba(15,15,15,0.75)',
+  glassBorder:    'rgba(255,107,44,0.15)',
+  border:         'rgba(255,255,255,0.10)',
   textPrimary:    '#FFFFFF',
-  textSecondary:  '#A0A0A0',
-  textMuted:      '#606060',
-  textOnPrimary:  '#FFFFFF',
-
-  // Semantic
+  textSecondary:  'rgba(255,255,255,0.65)',
+  textMuted:      'rgba(255,255,255,0.35)',
+  gold:           '#FFD700',
   success:        '#22C55E',
-  warning:        '#F59E0B',
   error:          '#EF4444',
   info:           '#3B82F6',
-
-  // Borders
-  border:         '#2A2A2A',
-  borderLight:    '#333333',
-
-  // Overlay
-  overlay:        'rgba(0,0,0,0.6)',
-  overlayLight:   'rgba(0,0,0,0.3)',
-
-  // Special
-  gold:           '#FFD700',
-  silver:         '#C0C0C0',
-  bronze:         '#CD7F32',
-} as const;
-
-export const Spacing = {
-  xs:   4,
-  sm:   8,
-  md:   16,
-  lg:   24,
-  xl:   32,
-  xxl:  48,
-} as const;
-
-export const Radius = {
-  sm:   8,
-  md:   12,
-  lg:   16,
-  xl:   24,
-  full: 9999,
-} as const;
+};
 
 export const Typography = {
   sizes: {
-    xs:   11,
-    sm:   13,
-    base: 15,
-    md:   17,
-    lg:   20,
-    xl:   24,
-    xxl:  30,
-    xxxl: 36,
+    xxl:32, xl:24, lg:20, md:17,
+    base:15, sm:13, xs:11, xxs:10,
   },
   weights: {
     regular:   '400' as const,
@@ -75,28 +32,31 @@ export const Typography = {
     bold:      '700' as const,
     extrabold: '800' as const,
   },
-} as const;
+  // Presets
+  hero:    { fontSize:52, lineHeight:60, fontWeight:'800' as const },
+  h1:      { fontSize:32, lineHeight:40, fontWeight:'800' as const },
+  h2:      { fontSize:24, lineHeight:30, fontWeight:'700' as const },
+  label:   { fontSize:13, lineHeight:18, fontWeight:'600' as const },
+  body:    { fontSize:15, lineHeight:22, fontWeight:'400' as const },
+  caption: { fontSize:11, lineHeight:15, fontWeight:'500' as const },
+  micro:   { fontSize:10, lineHeight:13, fontWeight:'600' as const },
+};
 
-export const Shadow = {
-  sm: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  md: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  lg: {
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-} as const;
+export const Spacing = {
+  xs:4, sm:8, md:16, lg:24, xl:32, xxl:48,
+};
+
+export const Radius = {
+  sm:8, md:12, lg:16, xl:24, xxl:32, full:999,
+};
+
+export const Springs = {
+  snappy: { damping:25, stiffness:400, mass:0.8 },
+  smooth: { damping:20, stiffness:200, mass:1.0 },
+  bouncy: { damping:12, stiffness:180, mass:1.2 },
+  gentle: { damping:18, stiffness:120, mass:1.0 },
+};
+
+export const Timing = {
+  instant:80, fast:150, normal:250, slow:400, verySlow:600,
+};
